@@ -139,6 +139,8 @@ def get_badge_color(classification):
     # Default to neutral if no match
     return "badge-neutral"
 
+# ui/components.py - Updated with fixes for interactive elements
+
 def batch_upload_form():
     """Render form for uploading multiple images for batch insect classification"""
     
@@ -149,7 +151,7 @@ def batch_upload_form():
             P("Upload multiple insect images (up to 10) for AI classification.", 
               cls="text-zinc-300 text-center mb-6"),
             
-            # Image upload card
+            # Image upload card - made more interactive
             Div(
                 Div(
                     Label("Upload Insect Images:", cls="text-white font-medium mb-2"),
@@ -159,7 +161,7 @@ def batch_upload_form():
                         accept=".jpg,.jpeg,.png",
                         required=True,
                         multiple=True,
-                        cls="file-input file-input-bordered file-input-warning w-full",
+                        cls="file-input file-input-bordered file-input-warning w-full cursor-pointer",
                         onchange="handleMultipleFiles(this)"
                     ),
                     P(id="file-count", cls="text-sm text-zinc-400 mt-2"),
@@ -167,22 +169,27 @@ def batch_upload_form():
                     Div(id="file-inputs-container", cls="hidden"),
                     cls="grid place-items-center p-4"
                 ),
-                cls="card bg-zinc-800 border border-zinc-700 rounded-box w-full mb-4"
+                cls="card bg-zinc-800 border border-zinc-700 rounded-box w-full mb-4 relative z-10"  # Added z-index
             ),
             
-            # Context sharing option
+            # Context sharing option - improved for interaction
             Div(
                 Label(
-                    Input(type="checkbox", name="share_context", value="true", cls="checkbox checkbox-warning mr-2"),
+                    Input(
+                        type="checkbox", 
+                        name="share_context", 
+                        value="true", 
+                        cls="checkbox checkbox-warning mr-2 cursor-pointer"
+                    ),
                     "Share context across all images (faster)",
                     cls="flex items-center cursor-pointer text-white"
                 ),
                 P("Uses the same reference document for all insects instead of finding unique matches.",
                   cls="text-zinc-400 text-sm mt-1 ml-6"),
-                cls="mb-6"
+                cls="mb-6 relative z-10"  # Added z-index
             ),
             
-            # Process button
+            # Process button with improved interaction
             Button(
                 Div(
                     "Classify Insects",
@@ -190,12 +197,13 @@ def batch_upload_form():
                 ),
                 id="batch-button",
                 type="submit",
-                cls="btn btn-warning w-full"
+                cls="btn btn-warning w-full hover:btn-warning-focus relative z-10"  # Added hover state and z-index
             ),
             
-            # JavaScript for handling multiple files
+            # JavaScript for handling multiple files - improved with debugging
             Script("""
             function handleMultipleFiles(input) {
+                console.log("File input changed:", input.files.length, "files selected");
                 const maxFiles = 10;
                 if (input.files.length > maxFiles) {
                     alert(`Please select a maximum of ${maxFiles} files.`);
@@ -216,16 +224,58 @@ def batch_upload_form():
                     fileInput.style.display = 'none';
                     container.appendChild(fileInput);
                     
-                    // Use FileList API to set the file
-                    const dataTransfer = new DataTransfer();
-                    dataTransfer.items.add(input.files[i]);
-                    fileInput.files = dataTransfer.files;
+                    // Use DataTransfer to set the file
+                    try {
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(input.files[i]);
+                        fileInput.files = dataTransfer.files;
+                        console.log(`Added file ${i+1}: ${input.files[i].name}`);
+                    } catch (err) {
+                        console.error(`Error adding file ${i+1}:`, err);
+                    }
                 }
                 
                 // Update count display
                 document.getElementById('file-count').textContent = 
                     `${input.files.length} file${input.files.length !== 1 ? 's' : ''} selected`;
+                    
+                console.log("Files processed successfully");
             }
+            """),
+            
+            # Additional initialization script for HTMX and events
+            Script("""
+            document.addEventListener('DOMContentLoaded', function() {
+                console.log("DOM loaded, initializing form elements");
+                
+                // Make sure file inputs are clickable
+                const fileInputs = document.querySelectorAll('input[type="file"]');
+                fileInputs.forEach(input => {
+                    input.addEventListener('click', function(e) {
+                        console.log("File input clicked");
+                        e.stopPropagation();
+                    });
+                });
+                
+                // Make sure checkboxes are clickable
+                const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(checkbox => {
+                    checkbox.addEventListener('click', function(e) {
+                        console.log("Checkbox clicked, value:", this.checked);
+                        e.stopPropagation();
+                    });
+                });
+                
+                // Add submit handler with logging
+                const form = document.getElementById('batch-upload-form');
+                if (form) {
+                    form.addEventListener('submit', function(e) {
+                        console.log("Form submitted");
+                        const formData = new FormData(this);
+                        console.log("Files to upload:", formData.getAll('image_files').length);
+                    });
+                }
+            });
             """),
             
             cls="bg-zinc-900 rounded-md p-6 w-full max-w-lg border border-zinc-700"
@@ -281,19 +331,19 @@ def carousel_ui(batch_results):
                         # Swap component
                         Label(
                             # Hidden checkbox controls the state
-                            Input(type="checkbox"),
+                            Input(type="checkbox", cls="cursor-pointer"),
                             # Swap-on shows when checked (thumbs down)
                             Div("👎", cls="swap-on"),
                             # Swap-off shows when unchecked (thumbs up)
                             Div("👍", cls="swap-off"),
-                            cls="swap swap-flip text-3xl mx-2"
+                            cls="swap swap-flip text-3xl mx-2 cursor-pointer"
                         ),
                         
                         # View raw output modal button
                         Button(
                             "view raw output",
                             onclick=f"{modal_id}.showModal()",
-                            cls="btn btn-sm btn-outline ml-2"
+                            cls="btn btn-sm btn-outline ml-2 cursor-pointer"
                         ),
                         
                         # Add dialog modal
@@ -303,7 +353,7 @@ def carousel_ui(batch_results):
                                 P(response, cls="py-4 whitespace-pre-wrap text-sm font-mono bg-black p-2 rounded overflow-auto max-h-96"),
                                 Div(
                                     Form(
-                                        Button("Close", cls="btn"),
+                                        Button("Close", cls="btn cursor-pointer"),
                                         method="dialog"
                                     ),
                                     cls="modal-action"
@@ -322,7 +372,7 @@ def carousel_ui(batch_results):
                         # Collapse title
                         Div(
                             "View Context",
-                            cls="collapse-title font-semibold"
+                            cls="collapse-title font-semibold cursor-pointer"
                         ),
                         
                         # Collapse content
@@ -363,7 +413,7 @@ def carousel_ui(batch_results):
                         ),
                         
                         tabindex="0",
-                        cls="bg-zinc-800 text-white focus:bg-zinc-700 collapse rounded-md",
+                        cls="bg-zinc-800 text-white hover:bg-zinc-700 collapse rounded-md cursor-pointer",
                     ) if top_sources else ""),
                     
                     cls="w-full px-4 pb-4"
@@ -379,7 +429,7 @@ def carousel_ui(batch_results):
             A(
                 str(i+1),
                 href=f"#item{i+1}",
-                cls=f"btn btn-xs {'' if i > 0 else 'btn-active'}"
+                cls=f"btn btn-xs {'' if i > 0 else 'btn-active'} cursor-pointer"
             )
         )
     
@@ -405,18 +455,22 @@ def carousel_ui(batch_results):
                 "Classify More Insects",
                 hx_get="/batch-upload",
                 hx_target="#main-content",
-                cls="btn btn-warning w-full max-w-xs"
+                cls="btn btn-warning w-full max-w-xs cursor-pointer"
             ),
             cls="mt-8 text-center w-full"
         ),
         
-        # Simplified JavaScript - we no longer need to toggle sections visibility
+        # Enhanced JavaScript with debugging - for carousel navigation  
         Script("""
         document.addEventListener('DOMContentLoaded', function() {
+            console.log("Initializing carousel UI");
+            
             // Update active indicator on hash change
             const updateActiveIndicator = function() {
                 const id = window.location.hash.substring(1);
                 if (!id) return;
+                
+                console.log("Updating active indicator for:", id);
                 
                 // Update active indicator
                 document.querySelectorAll('[href^="#item"]').forEach(indicator => {
@@ -433,10 +487,28 @@ def carousel_ui(batch_results):
             
             // Initial update - if no hash, set to first item
             if (!window.location.hash) {
+                console.log("Setting initial carousel position to item1");
                 window.location.hash = 'item1';
             } else {
                 updateActiveIndicator();
             }
+            
+            // Make all modal buttons clickable
+            document.querySelectorAll('[onclick*="showModal"]').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    console.log("Modal button clicked:", this.innerText);
+                    e.stopPropagation();
+                });
+            });
+            
+            // Initialize collapse elements
+            document.querySelectorAll('.collapse').forEach(collapse => {
+                collapse.addEventListener('click', function() {
+                    console.log("Collapse element clicked");
+                });
+            });
+            
+            console.log("Carousel UI initialized");
         });
         """),
         
