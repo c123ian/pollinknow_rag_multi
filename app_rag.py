@@ -266,19 +266,58 @@ def serve_fasthtml():
         # Implementation omitted for brevity
         pass
     
+   # Main route function
     @rt("/")
     def get(session):
-        """Main landing page"""
         if 'session_id' not in session:
             session['session_id'] = str(uuid.uuid4())
         
-        # Return UI components
+        logging.info(f"New session: {session['session_id']} - showing batch upload form")
+        
         return (
             Title("Insect Classification"),
             Main(
-                # UI components omitted for brevity
+                # Loading indicator with better visibility
+                Div(
+                    Div(cls="loading loading-spinner loading-lg text-warning"),
+                    Div("Processing your insect images...", cls="text-white mt-4 text-lg"),
+                    id="loading-indicator",
+                    cls="htmx-indicator fixed top-0 left-0 w-full h-full bg-black bg-opacity-80 flex flex-col items-center justify-center z-50"
+                ),
+                
+                # Page header 
+                H1("Insect Classifier", cls="text-3xl font-bold mb-4 text-white"),
+                
+                # Header info
+                Div(
+                    P("Upload insect images for instant AI classification", 
+                      cls="text-white text-center mb-6"),
+                    cls="w-full max-w-2xl"
+                ),
+                
+                # Main content area - DIRECTLY SHOW BATCH FORM
+                Div(
+                    batch_upload_form(),
+                    id="main-content",
+                    cls="w-full max-w-2xl"
+                ),
+                
+                # Results area - will be populated by process-batch
+                Div(id="analysis-results", cls="w-full max-w-5xl mt-8"),
+                
+                cls="flex flex-col items-center min-h-screen bg-black p-4",
             )
         )
+
+    # Add batch upload route
+    @rt("/batch-upload", methods=["GET"])
+    def get_batch_upload(session):
+        """Show the batch upload form"""
+        if 'session_id' not in session:
+            session['session_id'] = str(uuid.uuid4())
+            
+        logging.info(f"Showing batch upload form for session: {session['session_id']}")
+        return batch_upload_form()
     
     return fasthtml_app
 
